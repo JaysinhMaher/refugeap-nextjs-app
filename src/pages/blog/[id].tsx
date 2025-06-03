@@ -277,35 +277,43 @@ const RemoveBlogButton = ({ blogId, authorId }: RemoveBlogButtonProps) => {
 };
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const blogs = await prisma.blog.findMany({});
-
-  const paths = blogs.map((item) => ({
-    params: { id: item.id },
-  }));
-
-  return { paths, fallback: "blocking" };
+  try {
+    const blogs = await prisma.blog.findMany({});
+    const paths = blogs.map((item) => ({
+      params: { id: item.id },
+    }));
+    return { paths, fallback: "blocking" };
+  } catch (error) {
+    console.error("getStaticPaths error:", error);
+    return { paths: [], fallback: "blocking" };
+  }
 };
 
 export const getStaticProps = async (
   ctx: GetStaticPropsContext<{ id: string }>
 ) => {
-  const ssg = createProxySSGHelpers({
-    router: appRouter,
-    ctx: await createTRPCContext(),
-    transformer: superjson,
-  });
+  try {
+    const ssg = createProxySSGHelpers({
+      router: appRouter,
+      ctx: await createTRPCContext(),
+      transformer: superjson,
+    });
 
-  const id = ctx.params?.id as string;
+    const id = ctx.params?.id as string;
 
-  await ssg.blog.byId.prefetch({ id });
+    await ssg.blog.byId.prefetch({ id });
 
-  return {
-    props: {
-      trpcState: ssg.dehydrate(),
-      id,
-    },
-    revalidate: 1,
-  };
+    return {
+      props: {
+        trpcState: ssg.dehydrate(),
+        id,
+      },
+      revalidate: 1,
+    };
+  } catch (error) {
+    console.error("getStaticProps error:", error);
+    return { notFound: true };
+  }
 };
 
 export default BlogDetailsPage;
