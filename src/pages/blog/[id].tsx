@@ -1,10 +1,6 @@
 import type { Blog, User } from "@prisma/client";
 import { createProxySSGHelpers } from "@trpc/react-query/ssg";
-import type {
-  GetStaticPaths,
-  GetStaticPropsContext,
-  InferGetStaticPropsType,
-} from "next";
+import { GetServerSideProps } from "next";
 import { useSession } from "next-auth/react";
 import Head from "next/head";
 import { useRouter } from "next/router";
@@ -276,22 +272,7 @@ const RemoveBlogButton = ({ blogId, authorId }: RemoveBlogButtonProps) => {
   );
 };
 
-export const getStaticPaths: GetStaticPaths = async () => {
-  try {
-    const blogs = await prisma.blog.findMany({});
-    const paths = blogs.map((item) => ({
-      params: { id: item.id },
-    }));
-    return { paths, fallback: "blocking" };
-  } catch (error) {
-    console.error("getStaticPaths error:", error);
-    return { paths: [], fallback: "blocking" };
-  }
-};
-
-export const getStaticProps = async (
-  ctx: GetStaticPropsContext<{ id: string }>
-) => {
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
   try {
     const ssg = createProxySSGHelpers({
       router: appRouter,
@@ -308,10 +289,9 @@ export const getStaticProps = async (
         trpcState: ssg.dehydrate(),
         id,
       },
-      revalidate: 1,
     };
   } catch (error) {
-    console.error("getStaticProps error:", error);
+    console.error("getServerSideProps error:", error);
     return { notFound: true };
   }
 };
